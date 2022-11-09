@@ -59,7 +59,11 @@ set +o nounset
 GIT_HOOKS_TRIGGERS_USER_DIR=$(_echo "${GIT_HOOKS_TRIGGERS_USER_DIR}")
 set -o nounset
 if [[ -z "${GIT_HOOKS_TRIGGERS_USER_DIR}" ]]; then
-  GIT_HOOKS_TRIGGERS_USER_DIR="~/${GIT_HOOKS_TRIGGERS_DIRNAME}"
+  if [[ -n "${XDG_CONFIG_HOME-}" ]]; then
+    GIT_HOOKS_TRIGGERS_USER_DIR="${XDG_CONFIG_HOME}/git/hooks-trigger"
+  else
+    GIT_HOOKS_TRIGGERS_USER_DIR="~/${GIT_HOOKS_TRIGGERS_DIRNAME}"
+  fi
 fi
 
 # Verbose mode option. Allowed:
@@ -246,7 +250,7 @@ parse_git_options() {
   case "$1" in
     --global|--system )
       GIT_HOOKS_CONFIG_LOCATION=$1
-      GIT_HOOKS_TRIGGERS_DIR="~/${GIT_HOOKS_TRIGGERS_DIRNAME}"
+      GIT_HOOKS_TRIGGERS_DIR="${GIT_HOOKS_TRIGGERS_USER_DIR}"
       GIT_HOOKS_OPTIONS_NUM=$((GIT_HOOKS_OPTIONS_NUM + 1))
       ;;
     --local|--worktree )

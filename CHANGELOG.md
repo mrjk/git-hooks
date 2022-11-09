@@ -17,6 +17,16 @@ Security - in case of vulnerabilities.
 
 ## [Unreleased]
 
+### Added
+
+- Add support for hooks defined in a directory
+
+### Changed
+
+- Change default location for global hooks
+
+### Fixed
+
 - Fix CLI unparsed color codes
 
 ## [1.0.3] 2020-05-10

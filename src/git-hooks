@@ -52,6 +52,7 @@ GIT_HOOKS_CONFIG_LOCATION=
 
 # Path to directory with triggers. Depends on GIT_HOOKS_CONFIG_LOCATION.
 GIT_HOOKS_TRIGGERS_DIRNAME=".git/hooks-triggers"
+GIT_HOOKS_TRIGGERS_LOCAL_TREE=".hooks"
 GIT_HOOKS_TRIGGERS_DIR=
 
 # Load user environment variable
@@ -61,8 +62,10 @@ set -o nounset
 if [[ -z "${GIT_HOOKS_TRIGGERS_USER_DIR}" ]]; then
   if [[ -n "${XDG_CONFIG_HOME-}" ]]; then
     GIT_HOOKS_TRIGGERS_USER_DIR="${XDG_CONFIG_HOME}/git/hooks-trigger"
+    GIT_HOOKS_TRIGGERS_USER_TREE="${XDG_CONFIG_HOME}/git/hooks"
   else
     GIT_HOOKS_TRIGGERS_USER_DIR="~/${GIT_HOOKS_TRIGGERS_DIRNAME}"
+    GIT_HOOKS_TRIGGERS_USER_TREE="~/.git/hooks"
   fi
 fi
 
@@ -239,6 +242,46 @@ get_git_dir() {
   [[ $? -eq 0 ]] || report_invalid_usage "$GIT_HOOKS_NAME must be run inside a git repository"
 }
 
+scan_hooks_dir()
+{
+  local name=$1
+  local key=$2
+  local path=$3
+  local items=''
+
+  # Fetch user hooks
+  for file in $(find "$path" -type f 2>/dev/null); do
+    local ident=${file##*/}
+    local item="hooks.$name.${ident//./-} $file"
+    if [[ "$item" =~ ${key} ]]; then
+      items="${items:+$items\n}$item"
+    fi
+  done
+
+  if [[ -n "$items" ]]; then
+    _echo "$items"
+  fi
+}
+
+get_hooks_from_dirs()
+{
+  local name=$1
+  local key=$2
+
+  # Fetch user hooks
+  local path="$GIT_HOOKS_TRIGGERS_USER_TREE/$name"
+  local items="${items:+$items\n}$(scan_hooks_dir $name $key $path)"
+
+  # Fetch project hooks
+  path="$(get_git_dir)/$GIT_HOOKS_TRIGGERS_LOCAL_TREE/$name"
+  items="${items:+$items\n}$(scan_hooks_dir $name $key $path)"
+
+  if [[ -n "$items" ]]; then
+    _echo "$items"
+  fi
+}
+
+
 parse_git_options() {
   # No location option is specified, use default.
   if [[ $# == 0 ]]; then
@@ -328,7 +371,7 @@ list_hooks() {
 
   _echo "Hooks for ${FCY}\"${key//\\./.}${NC}\""
 
-  local items=$(git config ${GIT_HOOKS_CONFIG_LOCATION} --get-regexp ${key})
+  local items=$(git config ${GIT_HOOKS_CONFIG_LOCATION} --get-regexp ${key}; get_hooks_from_dirs $name $key)
 
   for item in ${items}; do
     if [[ "$item" =~ ${key} ]]; then
@@ -430,7 +473,7 @@ trigger_hooks() {
   local name=$1
   local key=$2
   shift 2
-  local items=$(git config ${GIT_HOOKS_CONFIG_LOCATION} --type=path --get-regexp ${key})
+  local items=$(git config ${GIT_HOOKS_CONFIG_LOCATION} --type=path --get-regexp ${key}; get_hooks_from_dirs $name $key)
 
   for item in ${items}; do
     if [[ "$item" =~ ${key} ]]; then

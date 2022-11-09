@@ -83,6 +83,20 @@ Example how ot install `git-hooks` globally:
 git-hooks install --global
 ~~~
 
+It is also possible to use automagically hooks defined in the following directories:
+
+* Global level: `$XDG_CONFIG_HOME/git/hooks` or `$HOME/.git/hooks`
+* Local level: `.hooks`
+
+The directory tree looks like:
+```
+.hooks/
+`-- pre-commit
+    `-- hook_local.sh
+```
+Subdir can be a single file (like default git behavior) or a directory containing a list
+of hooks.
+
 ## Documentation
 
 For more details see `git-hooks` help:

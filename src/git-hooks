@@ -31,6 +31,12 @@
 set -o nounset
 set -o errexit
 
+_echo()
+{
+  echo -e "${@-}"
+}
+
+
 START_DIR=$(pwd)
 
 GIT_HOOKS_CMD_NAME="$(basename "$0" | sed -e 's/-/ /')"
@@ -50,7 +56,7 @@ GIT_HOOKS_TRIGGERS_DIR=
 
 # Load user environment variable
 set +o nounset
-GIT_HOOKS_TRIGGERS_USER_DIR=$(echo "${GIT_HOOKS_TRIGGERS_USER_DIR}")
+GIT_HOOKS_TRIGGERS_USER_DIR=$(_echo "${GIT_HOOKS_TRIGGERS_USER_DIR}")
 set -o nounset
 if [[ -z "${GIT_HOOKS_TRIGGERS_USER_DIR}" ]]; then
   GIT_HOOKS_TRIGGERS_USER_DIR="~/${GIT_HOOKS_TRIGGERS_DIRNAME}"
@@ -153,7 +159,7 @@ log() {
   # Consider as info
   if [[ $# -eq 0 ]]; then
     if [[ ${GIT_HOOKS_VERBOSE_MODE} -ge 2 ]]; then
-      echo "$@"
+      _echo "$@"
     fi
     return
   fi
@@ -162,25 +168,25 @@ log() {
     "error" )
       shift 1
       if [[ ${GIT_HOOKS_VERBOSE_MODE} -ge 0 ]]; then
-        echo >&2 "${FCR}$@${NC}"
+        _echo >&2 "${FCR}$@${NC}"
       fi
       ;;
     "warning" )
       shift 1
       if [[ ${GIT_HOOKS_VERBOSE_MODE} -ge 1 ]]; then
-        echo "${FCY}$@${NC}"
+        _echo "${FCY}$@${NC}"
       fi
       ;;
     "info" | "debug" )
       shift 1
       if [[ ${GIT_HOOKS_VERBOSE_MODE} -ge 2 ]]; then
-        echo "$@"
+        _echo "$@"
       fi
       ;;
     "trace" )
       shift 1
       if [[ ${GIT_HOOKS_VERBOSE_MODE} -ge 3 ]]; then
-        echo "${FCS}$@${NC}"
+        _echo "${FCS}$@${NC}"
       fi
       ;;
     * )
@@ -190,7 +196,7 @@ log() {
 }
 
 ask() {
-    echo "$@ [Y/n] \c"; read answer
+    _echo "$@ [Y/n] \c"; read answer
     case "${answer}" in
         y* |Y* | "" ) return 0 ;;
         *) return 1 ;;
@@ -217,15 +223,15 @@ report_hook_error() {
 }
 
 report_start() {
-  echo "${FCG}$@${NC}"
+  _echo "${FCG}$@${NC}"
 }
 
 report_done() {
-  [[ $# > 0 ]] && echo "${FCG}✓ $@${NC}" || echo "${FCG}✓ Done${NC}"
+  [[ $# > 0 ]] && _echo "${FCG}✓ $@${NC}" || _echo "${FCG}✓ Done${NC}"
 }
 
 get_git_dir() {
-  echo "$(dirname "$(git rev-parse --absolute-git-dir)")"
+  _echo "$(dirname "$(git rev-parse --absolute-git-dir)")"
   [[ $? -eq 0 ]] || report_invalid_usage "$GIT_HOOKS_NAME must be run inside a git repository"
 }
 
@@ -316,17 +322,17 @@ list_hooks() {
   local key=$2
   shift 2
 
-  echo "Hooks for ${FCY}\"${key//\\./.}${NC}\""
+  _echo "Hooks for ${FCY}\"${key//\\./.}${NC}\""
 
   local items=$(git config ${GIT_HOOKS_CONFIG_LOCATION} --get-regexp ${key})
 
   for item in ${items}; do
     if [[ "$item" =~ ${key} ]]; then
-      echo "The \"${item##*.}\" hooks"
+      _echo "The \"${item##*.}\" hooks"
       continue
     fi
 
-    echo "- \"${item}\""
+    _echo "- \"${item}\""
   done
 }
 
@@ -348,7 +354,7 @@ make_hooks() {
 
   for name in "${HOOKS_LIST[@]}"; do
     log debug "Writing trigger: $name"
-    echo "#!/bin/sh\n\ngit-hooks trigger \$(basename \$0) -- \$@" > "${GIT_HOOKS_TRIGGERS_DIR}/$name"
+    _echo "#!/bin/sh\n\ngit-hooks trigger \$(basename \$0) -- \$@" > "${GIT_HOOKS_TRIGGERS_DIR}/$name"
     chmod +x "${GIT_HOOKS_TRIGGERS_DIR}/$name"
   done
 }
@@ -455,16 +461,16 @@ trigger_hooks() {
 }
 
 if [[ $# == 0 ]]; then
-  echo "${GIT_HOOKS_HELP}"
+  _echo "${GIT_HOOKS_HELP}"
   exit
 fi
 
 case "$1" in
   --version )
-    echo "${GIT_HOOKS_ABOUT}"
+    _echo "${GIT_HOOKS_ABOUT}"
     ;;
   -h|--help|-?|"" )
-    echo "${GIT_HOOKS_HELP}"
+    _echo "${GIT_HOOKS_HELP}"
     ;;
   install )
     shift 1

@@ -17,7 +17,7 @@ Security - in case of vulnerabilities.
 
 ## [Unreleased]
 
-_TBD_
+- Fix CLI unparsed color codes
 
 ## [1.0.3] 2020-05-10
 

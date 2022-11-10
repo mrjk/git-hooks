@@ -23,6 +23,7 @@ Security - in case of vulnerabilities.
 
 ### Changed
 
+- Hook listing now accept zero or more hooks as arguments
 - Change default location for global hooks
 
 ### Fixed

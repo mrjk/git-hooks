@@ -357,19 +357,34 @@ parse_hook_name_option() {
   fi
 
   if [[ ! " ${HOOKS_LIST[@]} " =~ " $1 " ]]; then
-    report_invalid_usage "Unknown hook name: $1"
+    report_invalid_usage "Unknown hook name: $1, please choose one of: ${HOOKS_LIST[*]}"
   fi
 
   GIT_HOOKS_HOOK_NAME=$1
   GIT_HOOKS_OPTIONS_NUM=$((GIT_HOOKS_OPTIONS_NUM + 1))
 }
 
+parse_hook_name_list() {
+  local hooks=( "${@-}" )
+  if [[ $# < 1 ]]; then
+    hooks=( "${HOOKS_LIST[@]}" )
+  else
+    GIT_HOOKS_OPTIONS_NUM=$((GIT_HOOKS_OPTIONS_NUM + $# ))
+  fi
+
+  for hook in ${hooks[@]} ; do
+    if [[ ! " ${HOOKS_LIST[@]} " =~ " $hook " ]]; then
+      report_invalid_usage "Unknown hook name: $hook, please choose one of: ${HOOKS_LIST[*]}"
+    fi
+  done
+
+  GIT_HOOKS_HOOK_NAMES=( "${hooks[@]}" )
+}
+
 list_hooks() {
   local name=$1
   local key=$2
   shift 2
-
-  _echo "Hooks for ${FCY}\"${key//\\./.}${NC}\""
 
   local items=$(
     git config ${GIT_HOOKS_CONFIG_LOCATION} --get-regexp ${key} || true
@@ -547,14 +562,24 @@ case "$1" in
     shift 1
     check_requirements
     parse_git_options $@; shift ${GIT_HOOKS_OPTIONS_NUM}; GIT_HOOKS_OPTIONS_NUM=0
-    parse_hook_name_option $@; shift ${GIT_HOOKS_OPTIONS_NUM}; GIT_HOOKS_OPTIONS_NUM=0
+    parse_hook_name_list $@; shift ${GIT_HOOKS_OPTIONS_NUM}; GIT_HOOKS_OPTIONS_NUM=0
     parse_commands_options $@; shift ${GIT_HOOKS_OPTIONS_NUM}; GIT_HOOKS_OPTIONS_NUM=0
 
-    report_start "$GIT_HOOKS_NAME is listing hooks..."
-    list_hooks "$GIT_HOOKS_HOOK_NAME" "hooks\.pre-trigger\."
-    list_hooks "$GIT_HOOKS_HOOK_NAME" "hooks\.$GIT_HOOKS_HOOK_NAME\."
-    list_hooks "$GIT_HOOKS_HOOK_NAME" "hooks\.post-trigger\."
-    report_done
+    # Loop over all hooks
+    for git_hook_name in ${GIT_HOOKS_HOOK_NAMES[*]}; do
+      report_start "$GIT_HOOKS_NAME hook listing: $git_hook_name"
+
+      # Loop over hooks kinds
+      for filter in "hooks\.pre-trigger\." "hooks\.$git_hook_name\." "hooks\.post-trigger\."; do
+        ret=$(list_hooks "$git_hook_name" "$filter")
+        if [[ -n "$ret" ]]; then
+          _echo "Hooks for ${FCY}\"${filter//\\./.}${NC}\""
+          _echo "$ret"
+        fi
+      done
+
+      report_done
+    done
     ;;
   make )
     shift 1

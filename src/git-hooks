@@ -353,7 +353,7 @@ parse_commands_options() {
 
 parse_hook_name_option() {
   if [[ $# < 1 ]]; then
-    report_invalid_usage "Missing hook name"
+    report_invalid_usage "Missing hook name, please choose one of: ${HOOKS_LIST[*]}"
   fi
 
   if [[ ! " ${HOOKS_LIST[@]} " =~ " $1 " ]]; then
@@ -371,7 +371,9 @@ list_hooks() {
 
   _echo "Hooks for ${FCY}\"${key//\\./.}${NC}\""
 
-  local items=$(git config ${GIT_HOOKS_CONFIG_LOCATION} --get-regexp ${key}; get_hooks_from_dirs $name $key)
+  local items=$(
+    git config ${GIT_HOOKS_CONFIG_LOCATION} --get-regexp ${key} || true
+    get_hooks_from_dirs $name $key)
 
   for item in ${items}; do
     if [[ "$item" =~ ${key} ]]; then
@@ -473,7 +475,9 @@ trigger_hooks() {
   local name=$1
   local key=$2
   shift 2
-  local items=$(git config ${GIT_HOOKS_CONFIG_LOCATION} --type=path --get-regexp ${key}; get_hooks_from_dirs $name $key)
+  local items=$(
+    git config ${GIT_HOOKS_CONFIG_LOCATION} --type=path --get-regexp ${key} || true
+    get_hooks_from_dirs $name $key)
 
   for item in ${items}; do
     if [[ "$item" =~ ${key} ]]; then
